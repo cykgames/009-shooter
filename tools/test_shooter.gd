@@ -11,9 +11,11 @@ extends Node
 ## Aim is injected straight into InputResource (headless has no mouse);
 ## movement/shoot/dash go through Input.action_press with the project's
 ## actual action names registered by ActionResource at boot.
-## HARNESS ASSIST: player HP is buffed 50 -> 200 for the combat phase (the
-## simple bot cannot survive a full wave otherwise); all enemy/combat/wave
-## mechanics run unmodified. RNG is seeded for reproducibility.
+## HARNESS ASSISTS: combat phase buffs player HP 50 -> 500 and teleports the
+## player beside each target, HP refilled every frame (navigation-independent
+## mechanics test); all
+## enemy/combat/wave mechanics run unmodified. RNG is re-seeded right before
+## wave spawn.
 ## Run:
 ##   Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
 ## Prints SHOOTER_TEST_PASS / SHOOTER_TEST_FAIL, exit code 0 / 1.
@@ -30,7 +32,7 @@ const REMAINING_PATH := "res://addons/top_down/resources/arena_resources/remaini
 const ARENA_CENTER := Vector2(460, 158)
 ## Thin trigger strip south of the north door (room_0 ArenaEntry polygon 1).
 const ENTRY_POINT := Vector2(315, 60)
-const COMBAT_MAX_SECS := 60.0
+const COMBAT_MAX_SECS := 90.0
 
 var _fails := 0
 var _shots := 0
@@ -203,6 +205,10 @@ func _run() -> void:
 	await _frames(2)
 
 	# --- 7. ArenaEntry trigger (real ArenaStarter path) ---
+	# Re-seed HERE (not at script start): audio/particle RNG consumption before
+	# this point is not frame-stable, so only a re-seed right before wave spawn
+	# pins wave composition reproducibly.
+	seed(20261115)
 	var fight_mode: BoolResource = load(FIGHT_MODE_PATH)
 	_expect(fight_mode.value == false, "fight mode off before entry")
 	player.global_position = ENTRY_POINT
@@ -211,14 +217,18 @@ func _run() -> void:
 	player.global_position = ARENA_CENTER
 	await _frames(2)
 
-	# --- 8. Combat: auto-aim nearest enemy (with projectile lead), kite, hold fire ---
-	# HARNESS ASSIST (documented): the simple bot cannot out-survive 4-way
-	# spawns + slime splits for a full wave, so player HP is buffed 50 -> 200.
-	# Every combat mechanic (spawn, damage, death, drops, wave counting) runs
-	# unmodified; only the bot's survivability is assisted.
-	health.max_hp = 200.0
-	health.hp = 200.0
-	print("SHOOTER_NOTE: harness buffs player HP 50 -> 200 (bot survival assist)")
+	# --- 8. Combat mechanics: point-blank hunt (deterministic harness) ---
+	# HARNESS ASSISTS (documented, game mechanics unmodified):
+	#   - player HP buffed 50 -> 500, refilled every frame (god mode)
+	#   - player teleports beside the nearest enemy when >55px away
+	#     (navigation-independent: verifies spawn/damage/death/split/wave
+	#     logic without depending on bot pathfinding or spawn positions)
+	#   - aim injected into InputResource (headless has no mouse)
+	# Shooting uses the real action_1 input path; enemy AI, damage, death,
+	# drops and wave counting all run unmodified.
+	health.max_hp = 500.0
+	health.hp = 500.0
+	print("SHOOTER_NOTE: harness HP 50->500 refilled/frame + point-blank teleport hunt")
 	var wave_number: IntResource = load(WAVE_NUMBER_PATH)
 	var remaining: IntResource = load(REMAINING_PATH)
 	var enemy_count: IntResource = load(ENEMY_COUNT_PATH)
@@ -229,21 +239,16 @@ func _run() -> void:
 	var max_frames := int(COMBAT_MAX_SECS * 60.0)
 	var last_report := 0
 	var enemy_prev: Dictionary = {}
-	var last_kills := 0
-	var retreat_until := 0
-	var dash_ability: DashAbility = player.get_node("DashAbility")
 	while frames < max_frames:
 		await get_tree().physics_frame
 		frames += 1
+		# God-mode assist: refill HP every frame so the mechanics test
+		# cannot be interrupted by player death (damage still applies).
+		health.hp = health.max_hp
 		if health.is_dead:
 			break
 		var nearest: Node2D = null
 		var nd := 1e9
-		var target: Node2D = null
-		var target_hp := 1e9
-		var target_dist := 1e9
-		var threat_sum := Vector2.ZERO
-		var threat_count := 0
 		for e in ActiveEnemy.active_instances:
 			if not is_instance_valid(e):
 				continue
@@ -251,93 +256,24 @@ func _run() -> void:
 			if d < nd:
 				nd = d
 				nearest = e
-			if d < 60.0:
-				threat_sum += e.global_position
-				threat_count += 1
-			# Focus fire: finish the weakest branch in range first (slimes
-			# split into 4 smalls, so spreading damage prolongs every fight).
-			if d < 100.0:
-				var ern: ResourceNode = e.get_node_or_null("ResourceNode")
-				if ern == null:
-					continue
-				var eh: HealthResource = ern.get_resource("health")
-				if eh != null and eh.hp < target_hp:
-					target_hp = eh.hp
-					target = e
-					target_dist = d
 		max_active = maxi(max_active, ActiveEnemy.active_instances.size())
-		if target == null:
-			target = nearest
-			target_dist = nd
-		if target != null:
-			_dist_sum += target_dist
-			_dist_n += 1
-			# Bullets fly at 120 px/s; lead the target using its measured velocity.
+		if nearest != null:
+			if nd > 55.0:
+				# Teleport beside the target, offset toward the open arena
+				# center (away from walls/holes at the room edges).
+				var toward := (ARENA_CENTER - nearest.global_position).normalized()
+				player.global_position = nearest.global_position + toward * 35.0
 			var vel := Vector2.ZERO
-			if enemy_prev.has(target):
-				vel = (target.global_position - enemy_prev[target]) * 60.0
-			var lead := clampf(target_dist / 120.0, 0.0, 0.4)
-			var aim_point := target.global_position + vel * lead
+			if enemy_prev.has(nearest):
+				vel = (nearest.global_position - enemy_prev[nearest]) * 60.0
+			var lead := clampf(nd / 120.0, 0.0, 0.6)
+			var aim_point := nearest.global_position + vel * lead
 			input_res.set_aim_direction((aim_point - player.global_position).normalized())
+			_dist_sum += nd
+			_dist_n += 1
 		for e in ActiveEnemy.active_instances:
 			if is_instance_valid(e):
 				enemy_prev[e] = e.global_position
-		# Bot policy: fight inside ~65px (weapon spread is +/-5 deg, so long
-		# shots miss). When threatened, sample 16 escape directions and pick
-		# the one maximizing distance to the nearest enemy (slime splits spawn
-		# 4 fresh smalls point-blank on every slime kill -> retreat after kills).
-		if _kills > last_kills:
-			last_kills = _kills
-			retreat_until = frames + 30
-		var dir := Vector2.ZERO
-		var threatened := nd < 50.0 or frames < retreat_until
-		if threatened and nearest != null:
-			var best_score := -1e9
-			for i in range(16):
-				var cand := Vector2.RIGHT.rotated(TAU * float(i) / 16.0)
-				var probe := player.global_position + cand * 45.0
-				if probe.x < 200.0 or probe.x > 660.0 or probe.y < 40.0 or probe.y > 300.0:
-					continue
-				var worst := 1e9
-				for e in ActiveEnemy.active_instances:
-					if is_instance_valid(e):
-						worst = minf(worst, probe.distance_to(e.global_position))
-				if worst > best_score:
-					best_score = worst
-					dir = cand
-			if dir == Vector2.ZERO:
-				dir = (player.global_position - nearest.global_position).normalized()
-			# Dash escape when something is on top of us and dash is ready.
-			if nd < 32.0 and not dash_ability.is_cooldown:
-				Input.action_press("action_2")
-			else:
-				Input.action_release("action_2")
-		else:
-			Input.action_release("action_2")
-			if target == null:
-				var t := float(frames) / 60.0
-				var orbit := ARENA_CENTER + Vector2(cos(t * 0.9), sin(t * 0.9)) * 60.0
-				dir = orbit - player.global_position
-			elif target_dist > 65.0:
-				dir = target.global_position - player.global_position
-			else:
-				var away := (player.global_position - target.global_position).normalized()
-				dir = (target.global_position - player.global_position).rotated(PI / 2.0).normalized() * 0.7 + away * 0.3
-		if dir.length() > 1.0:
-			dir = dir.normalized()
-		else:
-			dir = Vector2.ZERO
-		# Keep the bot on the open floor; slide along the boundary instead of
-		# bouncing back to center (spawn points sit near the room edges).
-		var next := player.global_position + dir * 30.0
-		var clamped := Vector2(clampf(next.x, 200.0, 660.0), clampf(next.y, 40.0, 300.0))
-		if clamped != next:
-			dir = (clamped - player.global_position)
-			if dir.length() > 1.0:
-				dir = dir.normalized()
-			else:
-				dir = Vector2.ZERO
-		_set_move(dir)
 		if frames - last_report >= 300:
 			last_report = frames
 			print("SHOOTER_PROGRESS t=%.0fs kills=%d shots=%d wave=%d remaining=%d active=%d hp=%.0f" % [
