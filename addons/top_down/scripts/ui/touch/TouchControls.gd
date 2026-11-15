@@ -11,13 +11,28 @@ extends Control
 ## instead of keyboard/mouse while TouchState.touch_active. Hidden while
 ## paused (pause menu Buttons are touch-usable via mouse emulation).
 
-const DASH_CENTER := Vector2(444, 122)
-const SWITCH_CENTER := Vector2(356, 122)
-const PAUSE_CENTER := Vector2(452, 18)
+## Right-edge offsets (design units measured FROM the right edge of the
+## viewport). At the 480-wide 16:9 design these reproduce the original
+## fixed centers (444/356/452); on wider aspects the whole right cluster
+## tracks the right edge instead of floating near screen center.
+const DASH_RIGHT := 36.0
+const SWITCH_RIGHT := 124.0
+const PAUSE_RIGHT := 28.0
+const BUTTON_Y := 122.0
+const PAUSE_Y := 18.0
 const BUTTON_RADIUS := 16.0
 const PAUSE_RADIUS := 12.0
 ## Same generous hit factor as the joystick grab radius.
 const HIT_SCALE := 1.5
+## Aim stick zone width (matches touch_controls.tscn offset span 240..480).
+const AIM_ZONE_W := 240.0
+const AIM_ZONE_TOP := 120.0
+const AIM_ZONE_H := 150.0
+
+var dash_center := Vector2(444, 122)
+var switch_center := Vector2(356, 122)
+var pause_center := Vector2(452, 18)
+var _last_w := -1.0
 
 const ACTION_RESOURCE_PATH := "res://addons/top_down/resources/global_resources/action_resource.tres"
 const PAUSE_RESOURCE_PATH := "res://addons/top_down/resources/global_resources/pause_resource.tres"
@@ -41,6 +56,23 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pause_bool_resource.updated.connect(_on_pause_changed)
 	visible = TouchState.touch_active and not pause_bool_resource.value
+	_relayout()
+
+
+## Right-anchor the aim stick zone and the DASH/WPN/pause cluster to the
+## viewport's right edge so wide aspects (e.g. 19.5:9 phones) keep the aim
+## thumb at the bottom-right instead of drifting toward screen center.
+## At the 480-wide 16:9 design this is identical to the original layout.
+func _relayout() -> void:
+	var w := size.x
+	if w <= 0.0:
+		return
+	dash_center = Vector2(w - DASH_RIGHT, BUTTON_Y)
+	switch_center = Vector2(w - SWITCH_RIGHT, BUTTON_Y)
+	pause_center = Vector2(w - PAUSE_RIGHT, PAUSE_Y)
+	aim_stick.position = Vector2(w - AIM_ZONE_W, AIM_ZONE_TOP)
+	aim_stick.size = Vector2(AIM_ZONE_W, AIM_ZONE_H)
+	queue_redraw()
 
 
 func _on_pause_changed() -> void:
@@ -63,6 +95,10 @@ func _release_all() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	# Re-anchor on first valid layout and on any aspect/resize change.
+	if size.x != _last_w:
+		_last_w = size.x
+		_relayout()
 	# First touch on a touch-capable desktop flips TouchState.touch_active.
 	var show := TouchState.touch_active and not pause_bool_resource.value
 	if visible != show:
@@ -107,17 +143,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _press(p: Vector2, index: int) -> void:
 	# Buttons win over stick zones (they sit above the aim zone).
-	if _hit(p, PAUSE_CENTER, PAUSE_RADIUS):
+	if _hit(p, pause_center, PAUSE_RADIUS):
 		_pause_touch = index
 		_toggle_pause()
 		queue_redraw()
 		return
-	if _hit(p, DASH_CENTER, BUTTON_RADIUS):
+	if _hit(p, dash_center, BUTTON_RADIUS):
 		_dash_touch = index
 		TouchState.dash = true
 		queue_redraw()
 		return
-	if _hit(p, SWITCH_CENTER, BUTTON_RADIUS):
+	if _hit(p, switch_center, BUTTON_RADIUS):
 		_switch_touch = index
 		TouchState.switch_dir = -1
 		queue_redraw()
@@ -183,6 +219,6 @@ func _draw_pause(c: Vector2, r: float, held: bool) -> void:
 
 
 func _draw() -> void:
-	_draw_button(DASH_CENTER, BUTTON_RADIUS, _dash_touch != -1, "DASH")
-	_draw_button(SWITCH_CENTER, BUTTON_RADIUS, _switch_touch != -1, "WPN")
-	_draw_pause(PAUSE_CENTER, PAUSE_RADIUS, _pause_touch != -1)
+	_draw_button(dash_center, BUTTON_RADIUS, _dash_touch != -1, "DASH")
+	_draw_button(switch_center, BUTTON_RADIUS, _switch_touch != -1, "WPN")
+	_draw_pause(pause_center, PAUSE_RADIUS, _pause_touch != -1)

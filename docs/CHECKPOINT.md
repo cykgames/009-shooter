@@ -173,3 +173,65 @@ set GODOT=<path-to-Godot_v4.7.2-stable_win64_console.exe>
 
 Logs land in `build/` (gitignored): import.log, import2.log, smoke.log,
 regression.log, export.log.
+
+## A57 on-device test (2026-11-15 ~21:00-21:15, cykbot1)
+
+Device: A57 `SM-A576B`, WiFi adb `<LAN_IP>:5555` (USB also online).
+Install needs `--no-incremental` (incremental install fails silently over
+WiFi adb; adb daemon also restarted once mid-session, reconnect needed).
+
+Verified on device:
+- Install + launch OK. Godot 4.7.2 / Vulkan 1.4.304 Forward Mobile /
+  Samsung Xclipse 550. **0 script errors** in logcat.
+- Human play captured in logcat: tap 20:53:53 -> title music ("Lost
+  Hope.ogg") switched to game music ("Deeper Into the Dungeon.ogg") =
+  New Game pressed; ~17s play; touch events reach GodotInputHandler.
+- Rendering OK: arena, player, HUD (HP 50/50, wave labels), both
+  joysticks + WPN/DASH/pause all draw. Title screen "CYK SHOOTER" +
+  New Game/Options/Quit renders after reinstall.
+
+BUG FOUND + FIXED — wide-aspect touch layout:
+- Symptom: right (aim) joystick rendered at ~52% screen width (bottom
+  CENTER), not bottom-right. Measured knob centers on 2340x1080:
+  left (326,828), right (1212,826).
+- Cause: layout hard-coded for 480-wide 16:9 design. A57 is 19.5:9;
+  `stretch/aspect="keep_height"` expands design width to 585, but the
+  AimStick zone (240..480) and DASH/WPN/pause centers were fixed, so the
+  right cluster floated near center instead of tracking the right edge.
+  Also the first installed APK (built 20:03) predated the touch commit
+  (20:08) — stale.
+- Fix: `TouchControls.gd` now right-anchors at runtime from `size.x`:
+  `dash_center=(w-36,122)`, `switch_center=(w-124,122)`,
+  `pause_center=(w-28,18)`, AimStick zone `position=(w-240,120)`
+  `size=(240,150)`. Re-layout on first valid size + any width change
+  (`_physics_process`). At w=480 (16:9) identical to original.
+- Regression: `build/verify_layout_fix.log` = SHOOTER_TEST_PASS
+  (fails=0, kills=10, wave advanced, full touch chain). Rebuilt APK
+  21:13 (debug-signed, apksigner verified), reinstalled, title OK.
+
+OPEN (needs phone screen free — user was actively using A57, kept
+returning to launcher; automated in-game touch test could not complete):
+1. Visual confirm of new right-anchored layout IN-GAME on A57 (expected
+   aim knob ~89% width). Math + headless confirm; on-device in-game
+   screenshot not yet captured.
+2. Real finger move/shoot/dash feel (human playtest).
+3. **Green/white vertical stripes at screen bottom** (below arena, in
+   the void): no "grass" asset in project; ScreenEffects is only a
+   transparent flash ColorRect (no shader). Suspect background
+   FloorLayer TileMap mobile-Vulkan artifact OR a tileset texture —
+   UNCONFIRMED. Next: compare desktop vs mobile render of room_start,
+   or toggle Background/FloorLayer to isolate.
+
+Evidence: `build/a57_launch.log`, `build/a57_full.log`,
+`build/verify_layout_fix.log`, `build/export_layout_fix.log`;
+screenshots `cykagent/workspace/artifacts/tmp/a57_shot1-5.png`
+(shot2/3 = old APK in-game w/ stripes + misplaced stick; shot4 = new
+APK title; shot5 = launcher, user took phone). Measurement scripts:
+`artifacts/tmp/measure_sticks*.py`.
+
+Reproduce layout fix verify:
+```bat
+%GODOT% --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
+%GODOT% --headless --path . --export-debug "Android" build/003-shooter.apk
+adb -s <LAN_IP>:5555 install -r --no-incremental build/003-shooter.apk
+```
