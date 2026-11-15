@@ -1,10 +1,10 @@
-# CykShooter (003-shooter)
+# CykShooter (009-shooter)
 
 Top-down zombie arena shooter for Android (arm64) and desktop, built with
 Godot 4.7. Fight endless waves of zombies and slimes (plus the Big Jelly
 boss) in an isometric arena: move, aim, dash, and swap between 5 weapons.
 
-Part of the [cykgames](https://github.com/cykgames) series — game #003.
+Part of the [cykgames](https://github.com/cykgames) series — game #009.
 
 ## Credits
 
@@ -75,8 +75,8 @@ Godot_v4.7.2-stable_win64_console.exe --headless --path . --quit-after 1200
 :: headless gameplay regression (prints SHOOTER_TEST_PASS)
 Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
 
-:: export Android APK (arm64-v8a, debug-signed) -> build/003-shooter.apk
-Godot_v4.7.2-stable_win64_console.exe --headless --path . --export-debug "Android" build/003-shooter.apk
+:: export Android APK (arm64-v8a, debug-signed) -> build/009-shooter.apk
+Godot_v4.7.2-stable_win64_console.exe --headless --path . --export-debug "Android" build/009-shooter.apk
 ```
 
 Android notes:

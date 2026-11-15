@@ -1,5 +1,5 @@
 extends Node
-## Headless gameplay regression for 003-shooter.
+## Headless gameplay regression for 009-shooter.
 ## Loads arena room_0 directly, then verifies:
 ##   1. Joystick output math (adapted 480x270 constants)
 ##   2. Player movement via the project's real Input actions

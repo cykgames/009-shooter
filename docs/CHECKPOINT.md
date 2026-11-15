@@ -1,4 +1,9 @@
-# 003-shooter — Build Checkpoint (2026-11-15)
+# 009-shooter — Build Checkpoint (2026-11-15)
+
+> Renumbered 003 → 009 on 2026-11-15 (serial collision: 003 already taken
+> by 003-shmup / 003-outpost from parallel dev waves). Directory, project
+> name, export path and docs updated; Android package/label unchanged
+> (`com.cykagent.shooter` / `CykShooter`).
 
 ## Status: playable mobile MVP v0.1.0, headless-verified, APK exported (local repo only, no remote)
 
@@ -34,7 +39,7 @@ New work (this checkpoint):
 - **Rebrand**: boot/title header "COOL GAME" -> "CYK SHOOTER"; generated
   `icon.png` 192x192 (crosshair); project icon switched to it.
 - **Android preset**: `export_presets.cfg` copied from 002-obby with
-  `com.cykagent.shooter` / `CykShooter` / `build/003-shooter.apk`.
+  `com.cykagent.shooter` / `CykShooter` / `build/009-shooter.apk`.
   arm64-v8a only, etc2=true, immersive, no internet permission, 0.1.0,
   script_export_mode=2 (compiled .gdc in APK).
 - **Project settings**: added TouchState autoload; enabled
@@ -103,8 +108,8 @@ root; logs under `build/` (gitignored).
      phase drives the actual TouchControls sticks.
    - Combat budget 90 s; wave 1 (10 kills) clears in ~31-59 s across runs.
 4. **APK export** — `--headless --path . --export-debug "Android"
-   build/003-shooter.apk` -> exit 0. Log: `build/export.log` (apksigner
-   "Signed" + verify DONE). File: `build/003-shooter.apk`,
+   build/009-shooter.apk` -> exit 0. Log: `build/export.log` (apksigner
+   "Signed" + verify DONE). File: `build/009-shooter.apk`,
    **37,726,955 bytes (36.0 MB)**. Verified via zipfile inspection:
    `lib/arm64-v8a/libgodot_android.so` + `libc++_shared.so` only,
    package `com.cykagent.shooter` in AndroidManifest (UTF-16), label
@@ -168,7 +173,7 @@ set GODOT=<path-to-Godot_v4.7.2-stable_win64_console.exe>
 %GODOT% --headless --path . --import
 %GODOT% --headless --path . --quit-after 1200
 %GODOT% --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
-%GODOT% --headless --path . --export-debug "Android" build/003-shooter.apk
+%GODOT% --headless --path . --export-debug "Android" build/009-shooter.apk
 ```
 
 Logs land in `build/` (gitignored): import.log, import2.log, smoke.log,
@@ -232,6 +237,21 @@ APK title; shot5 = launcher, user took phone). Measurement scripts:
 Reproduce layout fix verify:
 ```bat
 %GODOT% --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
-%GODOT% --headless --path . --export-debug "Android" build/003-shooter.apk
-adb -s <LAN_IP>:5555 install -r --no-incremental build/003-shooter.apk
+%GODOT% --headless --path . --export-debug "Android" build/009-shooter.apk
+adb -s <LAN_IP>:5555 install -r --no-incremental build/009-shooter.apk
 ```
+
+## Renumber 003 → 009 verify (2026-11-15 ~21:30, cykbot1)
+
+- Directory `projects/003-shooter` → `projects/009-shooter`; string rename
+  in project.godot / export_presets.cfg / README / docs / tools harness;
+  residual grep for `003-shooter` in project text = 0.
+- Headless regression after rename: `build/verify_rename.log` =
+  SHOOTER_TEST_PASS, fails=0, kills=10, wave advanced, full touch chain.
+- Re-export: `build/export_rename.log` apksigner "Signed";
+  `build/009-shooter.apk` = 37,813,170 bytes. Package/label unchanged.
+- GitHub org serials at rename time: 001/002/004/005/006/008 taken
+  (008-shmup = the other wave's shmup, already renumbered on GitHub);
+  009 free. Catalog row for this game not added yet (still unpublished).
+- A57 still has the pre-rename install (same package `com.cykagent.shooter`);
+  `install -r --no-incremental build/009-shooter.apk` updates it in place.
