@@ -1,51 +1,100 @@
-# Godot Game Template
+# CykShooter (003-shooter)
 
-[itch.io WEB DEMO](https://nezvers.itch.io/advanced-godot-template-isometric)    
+Top-down zombie arena shooter for Android (arm64) and desktop, built with
+Godot 4.7. Fight endless waves of zombies and slimes (plus the Big Jelly
+boss) in an isometric arena: move, aim, dash, and swap between 5 weapons.
 
-A starting point and reference project for creating games with the Godot Engine, particularly suited for top-down shooter games.
-Project is located in [addons/top_down](addons/top_down/) to keep project conflicts to a minimum. It showcases recommended project structure.
+Part of the [cykgames](https://github.com/cykgames) series — game #003.
 
-This repository also includes [addons/great_games_library](addons/great_games_library), a collection of scripts that offer general-purpose solutions applicable across various games.
+## Credits
 
-Additionally, for task organization, the project includes a simple [Kanban Tasks - Todo Manager](https://godotengine.org/asset-library/asset/1474) plugin.
+- Based on [nezvers/Godot-GameTemplate](https://github.com/nezvers/Godot-GameTemplate)
+  (MIT License — see [LICENSE](LICENSE)). The template lives in
+  `addons/top_down` and `addons/great_games_library`.
+- All game assets (sprites, sounds, music) are made by the template author
+  (nezvers) and are free to modify and use in commercial products per the
+  upstream README; they may not be sold as your own creation.
+- Touch joystick adapted from `002-obby` (same author, MIT).
 
-> **⚠️ CAUTION:**  
-> Due to an issues with a custom `AudioBusLayout` resource locations in Godot, I've kept the audio bus layout at its default location and name as [default_bus_layout.tres](default_bus_layout.tres).
+## Controls
 
-> **NOTE:**  
-> - This template is not recommended for beginners who may need a guidance.  
-> - It serves as my personal project template and will continue to evolve as I develop my own game. Updates will be made until the project starts to go beyond the needs of a generic top-down shooter and into game-specific content.
-> - All assets are made by me and are free to be modified and used for inclusion in commercial products, but not sold as your creation. Soon will be released as a separate package on [nezvers.itch.io](https://nezvers.itch.io)
+### Touch (Android, or any touchscreen)
 
-![PREVIEW](addons/top_down/assets/images/project_preview.png)
+Touch controls activate automatically on Android, or on the first screen
+touch on other platforms.
 
-## Main Features
-- Menu system
-	- Full Screen
-	- Audio (Master, Music, Sounds)
-	- Button state style tweaning
-- Pausing system
-- Input Rebinding
-- Frame by frame debug pausing (`P` - pause and advance, `[ + P` to unpause)
-- Scene transition using shader on a screenshot
-- precompile (Shader, CanvasMaterial, ParticleProcessMaterial) and preload scenes [boot_load.tscn](addons/top_down/scenes/ui/screens/)
-- Node reference managment [ReferenceNodeResource](addons/great_games_library/resources/ReferenceNodeResource/)
-- Easy instancing with configuration callbacks and dynamic instance pooling [InstanceResource](addons/great_games_library/resources/InstanceResource/)
-- Static functions for threaded loading [ThreadUtility](addons/great_games_library/static/ThreadUtility/ThreadUtility.gd)
-- Sound effect system [SoundResource](addons/great_games_library/resources/SoundResource/) with autoloaded [SoundManager](addons/great_games_library/autoload/SoundManager.gd)
-- Resource saving [SaveableResource](addons/great_games_library/resources/SaveableResource/SaveableResource.gd)
-- Data transmission system used for damage, pickups, obstacles [AreaTransmitter](addons/great_games_library/nodes/AreaTransmitter/)
-- Scene central data collection [ResourceNode](addons/great_games_library/nodes/ResourceNode/)
-- Enemy AI Astar grid path finding
-- Enemy wave spawning
+| Control | Action |
+|---------|--------|
+| Left virtual stick | Move |
+| Right virtual stick | Aim + **auto-fire** while held beyond the deadzone |
+| DASH button | Dash (needs a movement direction; 0.8 s cooldown) |
+| WPN button | Cycle to the next weapon |
+| II button (top right) | Pause / resume |
 
-## Recommendations
-To have easier learning experience on how project works I would suggest to start with these scenes:
-- Menu - addons/top_down/scenes/ui/screens/title.tscn
-- Rooms - addons/top_down/scenes/levels/room_0.tscn
-- Actors - addons/top_down/scenes/actors/actor.tscn
-- Weapons - addons/top_down/scenes/weapons/weapon.tscn
-- Projectiles - addons/top_down/scenes/projectiles/projectile.tscn
+Menu buttons (title, pause, game over) work by tap. The keyboard-rebinding
+screen is hidden on touch devices.
 
-## Project breakdown
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/2ZRxUUY6SeM/0.jpg)](https://www.youtube.com/watch?v=2ZRxUUY6SeM)
+### Keyboard + mouse (desktop)
+
+| Key | Action |
+|-----|--------|
+| WASD | Move |
+| Mouse | Aim |
+| Left mouse | Shoot |
+| Space | Dash |
+| Mouse wheel up / down | Previous / next weapon |
+| Esc | Pause |
+
+Gamepad is also supported (left stick move, right stick aim, RT shoot,
+A dash, bumpers switch weapons).
+
+## Gameplay
+
+- Walk through a door into the arena to start the fight (wave trigger).
+- Waves: 3 × 10 enemies (zombies / splitting slimes), then the Big Jelly boss.
+- Slimes split into 4 small slimes on death — focus fire matters.
+- Pickups: coins (score), health, weapon drops. Starting weapons spawn in
+  the entry room.
+- Weapons: gun, shotgun, assault rifle, bomb, sword.
+
+## Build
+
+Requirements: Godot 4.7.x, Android export templates, Android SDK with
+build-tools (for `apksigner`), a debug keystore (auto-generated by Godot).
+
+```bat
+:: import assets (first run generates .import files)
+Godot_v4.7.2-stable_win64_console.exe --headless --path . --import
+
+:: run the game on desktop
+Godot_v4.7.2-stable_win64_console.exe --path .
+
+:: headless smoke (boot -> title, 1200 frames)
+Godot_v4.7.2-stable_win64_console.exe --headless --path . --quit-after 1200
+
+:: headless gameplay regression (prints SHOOTER_TEST_PASS)
+Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
+
+:: export Android APK (arm64-v8a, debug-signed) -> build/003-shooter.apk
+Godot_v4.7.2-stable_win64_console.exe --headless --path . --export-debug "Android" build/003-shooter.apk
+```
+
+Android notes:
+
+- Package `com.cykagent.shooter`, app name `CykShooter`, version 0.1.0.
+- arm64-v8a only, ETC2 texture compression, immersive mode, no internet
+  permission.
+- `rendering/textures/vram_compression/import_etc2_astc=true` is required
+  in project settings for the Android export to succeed.
+- Renderer: Forward Plus (Vulkan). The A54 test device is Vulkan-capable.
+
+## Project layout
+
+- `addons/top_down` — the game (rooms, actors, weapons, UI, waves).
+- `addons/great_games_library` — generic resource/node framework (kept as-is;
+  SoundManager/Music autoloads depend on it).
+- `addons/top_down/scripts/ui/touch` — mobile twin-stick controls
+  (`TouchControls`, `Joystick`, `TouchState` autoload).
+- `tools/test_shooter.tscn/.gd` — headless gameplay regression.
+- `docs/CHECKPOINT.md` — build/verification checkpoint.
+- `build/` — exported APK + headless logs (gitignored).
