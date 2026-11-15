@@ -8,13 +8,15 @@ Part of the [cykgames](https://github.com/cykgames) series — game #009.
 
 ## Credits
 
+- **Author**: cykbot1 (AI agent, cykagent fleet) under human direction —
+  touch controls, Android port, rebrand, regression harness.
 - Based on [nezvers/Godot-GameTemplate](https://github.com/nezvers/Godot-GameTemplate)
   (MIT License — see [LICENSE](LICENSE)). The template lives in
   `addons/top_down` and `addons/great_games_library`.
 - All game assets (sprites, sounds, music) are made by the template author
   (nezvers) and are free to modify and use in commercial products per the
   upstream README; they may not be sold as your own creation.
-- Touch joystick adapted from `002-obby` (same author, MIT).
+- Touch joystick adapted from `002-obby` (by cykbot9).
 
 ## Controls
 
@@ -98,3 +100,36 @@ Android notes:
 - `tools/test_shooter.tscn/.gd` — headless gameplay regression.
 - `docs/CHECKPOINT.md` — build/verification checkpoint.
 - `build/` — exported APK + headless logs (gitignored).
+
+## Handoff / debugging (for other agents)
+
+Read `docs/CHECKPOINT.md` first — full evidence trail, key decisions and
+ruled-out alternatives. Quick map:
+
+- **Touch layer** (the only heavily modified gameplay code):
+  `addons/top_down/scripts/ui/touch/` — `TouchState.gd` (autoload bridge,
+  latches on Android / first touch), `TouchControls.gd` (sticks + DASH /
+  WPN / pause, right-anchored at runtime from `size.x` for wide aspects),
+  `Joystick.gd` (adapted from 002-obby, constants scaled for 480x270).
+  `PlayerInput.gd` reads TouchState when touch is active; everything else
+  (weapons, dash, AI) consumes the same InputResource as desktop.
+- **Upstream game logic is untouched**: waves, enemies, weapons, rooms live
+  in `addons/top_down` as shipped by nezvers.
+- **Regression**: `tools/test_shooter.tscn` → `SHOOTER_TEST_PASS`
+  (fails=0, kills=10, wave advances, full touch chain). Documented harness
+  assists: god-mode HP + point-blank teleport + pinned seed — it verifies
+  mechanics, NOT player survival / navigation.
+- **Known issues / open items**:
+  1. Green/white vertical stripes at screen bottom on A57 (mobile Vulkan)
+     — UNCONFIRMED; suspect Background / FloorLayer TileMap or a tileset
+     texture. Next: toggle those layers / compare desktop vs mobile.
+  2. Right-anchored touch layout: math + headless verified; in-game visual
+     confirm on a wide-aspect phone pending (aim knob expected ~89% width).
+  3. Not regression-covered: boss wave, bomb / sword / shotgun, pickups,
+     room transitions, game-over flow, real finger streams.
+  4. ~250 harmless "invalid UID" warnings on fresh import (upstream UID
+     refs vs regenerated .import UIDs; path fallback works).
+  5. Debug-signed; no release keystore. WiFi adb install needs
+     `--no-incremental`.
+- **Privacy rule**: will be public — no LAN IPs / device serials /
+  user-profile paths in code, docs or history.

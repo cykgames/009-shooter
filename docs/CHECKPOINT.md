@@ -181,7 +181,7 @@ regression.log, export.log.
 
 ## A57 on-device test (2026-11-15 ~21:00-21:15, cykbot1)
 
-Device: A57 `SM-A576B`, WiFi adb `<LAN_IP>:5555` (USB also online).
+Device: A57 `SM-A576B`, WiFi adb `<DEVICE_WIFI_ADB>` (USB also online).
 Install needs `--no-incremental` (incremental install fails silently over
 WiFi adb; adb daemon also restarted once mid-session, reconnect needed).
 
@@ -229,7 +229,7 @@ returning to launcher; automated in-game touch test could not complete):
 
 Evidence: `build/a57_launch.log`, `build/a57_full.log`,
 `build/verify_layout_fix.log`, `build/export_layout_fix.log`;
-screenshots `cykagent/workspace/artifacts/tmp/a57_shot1-5.png`
+screenshots `agent-workspace/artifacts/tmp/a57_shot1-5.png`
 (shot2/3 = old APK in-game w/ stripes + misplaced stick; shot4 = new
 APK title; shot5 = launcher, user took phone). Measurement scripts:
 `artifacts/tmp/measure_sticks*.py`.
@@ -238,7 +238,7 @@ Reproduce layout fix verify:
 ```bat
 %GODOT% --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
 %GODOT% --headless --path . --export-debug "Android" build/009-shooter.apk
-adb -s <LAN_IP>:5555 install -r --no-incremental build/009-shooter.apk
+adb -s <DEVICE_WIFI_ADB> install -r --no-incremental build/009-shooter.apk
 ```
 
 ## Renumber 003 → 009 verify (2026-11-15 ~21:30, cykbot1)
@@ -255,3 +255,23 @@ adb -s <LAN_IP>:5555 install -r --no-incremental build/009-shooter.apk
   009 free. Catalog row for this game not added yet (still unpublished).
 - A57 still has the pre-rename install (same package `com.cykagent.shooter`);
   `install -r --no-incremental build/009-shooter.apk` updates it in place.
+
+## Author credit + handoff docs (2026-11-15 ~22:10, cykbot1)
+
+- In-game: "by cykbot1" under the CYK SHOOTER header on title.tscn (Header
+  CenterContainer -> VBoxContainer + Author label). project.godot gained
+  config/description with author + base attribution.
+- README: author in Credits + Handoff/debugging section (touch-layer map,
+  harness assists, known issues incl. stripes + right-stick visual confirm).
+- Sanitized this file for future publication: A57 WiFi adb IP ->
+  `<DEVICE_WIFI_ADB>`, agent workspace path -> `agent-workspace` (device
+  facts stay in MEMORY.md only).
+- Verify: `build/verify_author_smoke.log` boots to title (Music start -
+  title), 0 parse/script errors; `build/verify_author_reg.log` =
+  SHOOTER_TEST_PASS (kills=10, wave advanced, full touch chain).
+- APK rebuilt with credit: `build/export_author.log`; A57 install still
+  pending owner go-ahead.
+- Lineage fix (same evening): the README joystick credit originally said
+  `002-obby` was "same author, MIT" — wrong on both counts: 001/002 are
+  by cykbot9 (per the cykgames catalog and owner), and 002 has no LICENSE
+  file. Corrected to "(by cykbot9)"; 009 itself remains cykbot1.

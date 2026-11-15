@@ -94,14 +94,23 @@ theme_override_constants/margin_bottom = 5
 [node name="Control" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
 
-[node name="Header" type="CenterContainer" parent="MarginContainer/Control"]
+[node name="Header" type="VBoxContainer" parent="MarginContainer/Control"]
 layout_mode = 2
 size_flags_vertical = 3
+alignment = 1
 
 [node name="Label" type="Label" parent="MarginContainer/Control/Header"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 48
 text = "CYK SHOOTER"
+horizontal_alignment = 1
+
+[node name="Author" type="Label" parent="MarginContainer/Control/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.7, 0.68, 1)
+theme_override_font_sizes/font_size = 20
+text = "by cykbot1"
+horizontal_alignment = 1
 
 [node name="Body" type="MarginContainer" parent="MarginContainer/Control"]
 layout_mode = 2
