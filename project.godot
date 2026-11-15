@@ -17,9 +17,11 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 config/name="003-shooter"
 run/main_scene="res://addons/top_down/scenes/ui/screens/boot_load.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://icon.png"
 
 [autoload]
+
+TouchState="*res://addons/top_down/scripts/ui/touch/TouchState.gd"
 
 SoundManager="*res://addons/top_down/scenes/autoloads/sound_manager.tscn"
 Music="*res://addons/top_down/scenes/autoloads/music.tscn"
@@ -104,3 +106,4 @@ ui_down={
 [rendering]
 
 textures/canvas_textures/default_texture_filter=3
+textures/vram_compression/import_etc2_astc=true

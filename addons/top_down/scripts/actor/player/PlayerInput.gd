@@ -28,6 +28,11 @@ func _ready()->void:
 	request_ready()
 
 func _input(event:InputEvent)->void:
+	# Touch mode: aim comes from the right virtual stick (TouchState), not
+	# from the mouse emulated by touches. Keyboard/mouse stay live on desktop
+	# until the first real screen touch flips TouchState.touch_active.
+	if TouchState.touch_active:
+		return
 	if event is InputEventMouseMotion:
 		action_resource.mouse_aim = true
 		var aim_direction:Vector2 = position_node.get_local_mouse_position() + aim_offset
@@ -52,6 +57,10 @@ func _input(event:InputEvent)->void:
 		return
 
 func _physics_process(_delta:float)->void:
+	if TouchState.touch_active:
+		_process_touch()
+		return
+	
 	# Walking direction
 	var _axis:Vector2 = Vector2(Input.get_axis(action_resource.left_action, action_resource.right_action), Input.get_axis(action_resource.up_action, action_resource.down_action))
 	
@@ -76,3 +85,21 @@ func _physics_process(_delta:float)->void:
 	
 	# Dashing
 	input_resource.set_action_2(Input.is_action_pressed(action_resource.action_2_action))
+
+## Touch twin-stick path: same InputResource writes as the keyboard/mouse
+## path above, sourced from the TouchState autoload (written by TouchControls).
+func _process_touch()->void:
+	input_resource.set_axis(TouchState.move_axis)
+	
+	if TouchState.aim_axis.length_squared() > 0.0001:
+		action_resource.mouse_aim = false
+		input_resource.set_aim_direction(TouchState.aim_axis.normalized())
+	
+	# Auto-fire while the aim stick is held beyond its deadzone.
+	input_resource.set_action(TouchState.shoot)
+	
+	if TouchState.switch_dir != 0:
+		input_resource.set_switch_weapon(TouchState.switch_dir)
+		TouchState.switch_dir = 0
+	
+	input_resource.set_action_2(TouchState.dash)

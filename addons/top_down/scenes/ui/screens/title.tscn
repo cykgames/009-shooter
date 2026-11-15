@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://dpv4epw1i5b4g"]
+[gd_scene load_steps=19 format=3 uid="uid://dpv4epw1i5b4g"]
 
 [ext_resource type="Theme" uid="uid://yctjuhnen1br" path="res://addons/top_down/resources/theme/game_gui_theme.theme" id="1_2uqb8"]
 [ext_resource type="Script" path="res://addons/top_down/scripts/ui/title_screen/MenuManager.gd" id="1_q1kds"]
@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://addons/top_down/scripts/game/MusicSetter.gd" id="12_dpfl3"]
 [ext_resource type="PackedScene" uid="uid://cs0pkiltyswgv" path="res://addons/top_down/scenes/ui/screens/control_rebinding.tscn" id="16_3p46i"]
 [ext_resource type="Script" path="res://addons/top_down/scripts/ui/menu_back_button.gd" id="16_diyr4"]
+[ext_resource type="Script" path="res://addons/top_down/scripts/ui/title_screen/TouchMenuAdjust.gd" id="18_tma"]
 
 [node name="Title" type="ColorRect"]
 anchors_preset = 15
@@ -100,7 +101,7 @@ size_flags_vertical = 3
 [node name="Label" type="Label" parent="MarginContainer/Control/Header"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 48
-text = "COOL GAME"
+text = "CYK SHOOTER"
 
 [node name="Body" type="MarginContainer" parent="MarginContainer/Control"]
 layout_mode = 2
@@ -267,6 +268,10 @@ menu_traverse_manager = NodePath("../../../../../MenuTraverseManager")
 [connection signal="pressed" from="MarginContainer/Control/Body/OptionMenu/Graphics/Button" to="MenuTraverseManager" method="open" binds= ["graphics"]]
 [connection signal="pressed" from="MarginContainer/Control/Body/OptionMenu/Audio/Button" to="MenuTraverseManager" method="open" binds= ["audio"]]
 [connection signal="pressed" from="MarginContainer/Control/Body/OptionMenu/Controls/Button" to="MenuTraverseManager" method="open" binds= ["controls"]]
+
+[node name="TouchMenuAdjust" type="Node" parent="."]
+script = ExtResource("18_tma")
+controls_button = NodePath("MarginContainer/Control/Body/OptionMenu/Controls")
 
 [editable path="MarginContainer/Control/Body/TitleMenu/Continue"]
 [editable path="MarginContainer/Control/Body/TitleMenu/NewGame"]
