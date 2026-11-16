@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://d0f2wib8tyow0"]
+[gd_scene load_steps=13 format=3 uid="uid://d0f2wib8tyow0"]
 
 [ext_resource type="PackedScene" uid="uid://bm0cdv63uc8am" path="res://addons/top_down/scenes/pickups/pickup.tscn" id="1_ffask"]
 [ext_resource type="Script" path="res://addons/top_down/scripts/pickups/ItemPickup.gd" id="2_r0an6"]
@@ -6,6 +6,10 @@
 [ext_resource type="Script" path="res://addons/great_games_library/nodes/AreaTransmitter/DataChannelTransmitter.gd" id="3_fay7m"]
 [ext_resource type="AudioStream" uid="uid://bo4pd7t8d2s2i" path="res://addons/top_down/assets/sounds/pickup_5.wav" id="4_25psd"]
 [ext_resource type="Texture2D" uid="uid://bevk5id3o0bei" path="res://addons/top_down/assets/images/shadow.png" id="4_r0lbw"]
+[ext_resource type="Texture2D" path="res://addons/top_down/assets/images/gui/pickup_halo.png" id="5_halo"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
+radius = 14.0
 
 [sub_resource type="Resource" id="Resource_ig3eg"]
 resource_name = "Item Pickup"
@@ -81,11 +85,15 @@ _data = {
 "flow": SubResource("Animation_xlg62")
 }
 
-[node name="ItemPickup" node_paths=PackedStringArray("icon_sprite", "data_transmitter") instance=ExtResource("1_ffask")]
+[node name="ItemPickup" node_paths=PackedStringArray("icon_sprite", "data_transmitter", "halo_sprite") instance=ExtResource("1_ffask")]
 script = ExtResource("2_r0an6")
 icon_sprite = NodePath("Pivot/Icon")
 data_transmitter = NodePath("AreaTransmitter2D/DataChannelTransmitter")
+halo_sprite = NodePath("Halo")
 sound_resource = SubResource("Resource_ig3eg")
+
+[node name="CollisionShape2D" parent="AreaTransmitter2D" index="0"]
+shape = SubResource("CircleShape2D_pickup")
 
 [node name="AreaTransmitter2D" parent="." index="0"]
 visible = false
@@ -107,3 +115,7 @@ libraries = {
 "": SubResource("AnimationLibrary_8j3g8")
 }
 autoplay = "flow"
+
+[node name="Halo" type="Sprite2D" parent="."]
+position = Vector2(0, -8)
+texture = ExtResource("5_halo")

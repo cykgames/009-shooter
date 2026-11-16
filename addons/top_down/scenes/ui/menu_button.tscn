@@ -5,20 +5,35 @@
 [ext_resource type="Script" path="res://addons/top_down/scripts/ui/ButtonAnimation.gd" id="2_v6vgl"]
 [ext_resource type="Resource" uid="uid://dtclpjqgsu53p" path="res://addons/top_down/resources/sounds/button_press.tres" id="4_unt5r"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rrpg3"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu"]
+content_margin_left = 12.0
+content_margin_top = 3.0
+content_margin_right = 12.0
+content_margin_bottom = 3.0
+bg_color = Color(0.043, 0.086, 0.082, 0.78)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.55, 0.75, 0.7, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [node name="MenuButton" type="PanelContainer"]
 theme = ExtResource("1_xmmy2")
-theme_override_styles/panel = SubResource("StyleBoxEmpty_rrpg3")
+theme_override_styles/panel = SubResource("StyleBoxFlat_menu")
 
 [node name="Button" type="Button" parent="."]
 material = ExtResource("2_fyqp8")
-custom_minimum_size = Vector2(100, 0)
+custom_minimum_size = Vector2(160, 30)
 layout_mode = 2
 
 [node name="Label" type="Label" parent="."]
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 12
 text = "Name"
 
 [node name="ButtonAnimation" type="Node" parent="." node_paths=PackedStringArray("button", "label")]
