@@ -32,7 +32,11 @@ const MAX_DRIFT := RADIUS * 0.30
 
 var output := Vector2.ZERO
 var active := false
-var home_center := Vector2(66, 82)
+## @export REQUIRED: touch_controls.tscn overrides this per stick (AimStick
+## uses 174,82). Without @export the scene override is silently dropped in
+## compiled-script APK exports (script_export_mode=2) and the aim disc draws
+## at the MoveStick default -- verified on A54 (disc at 66% width, not 89%).
+@export var home_center := Vector2(66, 82)
 var _center := Vector2(66, 82)
 var _knob := Vector2.ZERO
 var _touch := -1
@@ -57,6 +61,15 @@ static func compute_output(d: Vector2) -> Vector2:
 
 func touch_index() -> int:
 	return _touch
+
+
+## Runtime home assignment. TouchControls calls this so the per-stick home
+## does NOT depend on the .tscn property override being applied (compiled
+## APK exports dropped the non-exported override; see CHECKPOINT 2026-11-16).
+func set_home(c: Vector2) -> void:
+	home_center = c
+	_center = c
+	queue_redraw()
 
 
 func center() -> Vector2:

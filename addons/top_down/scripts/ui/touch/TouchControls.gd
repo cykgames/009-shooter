@@ -63,6 +63,9 @@ func _ready() -> void:
 ## viewport's right edge so wide aspects (e.g. 19.5:9 phones) keep the aim
 ## thumb at the bottom-right instead of drifting toward screen center.
 ## At the 480-wide 16:9 design this is identical to the original layout.
+## NOTE: the AimStick zone is ALSO right-anchored in touch_controls.tscn
+## (anchor_left/right=1, offsets -240..0) so it tracks the right edge from
+## instantiation even if this runtime assignment is deferred by layout.
 func _relayout() -> void:
 	var w := size.x
 	if w <= 0.0:
@@ -72,6 +75,10 @@ func _relayout() -> void:
 	pause_center = Vector2(w - PAUSE_RIGHT, PAUSE_Y)
 	aim_stick.position = Vector2(w - AIM_ZONE_W, AIM_ZONE_TOP)
 	aim_stick.size = Vector2(AIM_ZONE_W, AIM_ZONE_H)
+	# Homes assigned at runtime: scene property overrides for these were
+	# silently dropped in compiled-script APK exports (A54, 2026-11-16).
+	move_stick.set_home(Vector2(66, 82))
+	aim_stick.set_home(Vector2(174, 82))
 	queue_redraw()
 
 

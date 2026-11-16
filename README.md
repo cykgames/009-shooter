@@ -77,6 +77,9 @@ Godot_v4.7.2-stable_win64_console.exe --headless --path . --quit-after 1200
 :: headless gameplay regression (prints SHOOTER_TEST_PASS)
 Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
 
+:: headless real-touch-event routing regression (prints TOUCH_EVENTS_PASS)
+Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . res://tools/test_touch_events.tscn
+
 :: export Android APK (arm64-v8a, debug-signed) -> build/009-shooter.apk
 Godot_v4.7.2-stable_win64_console.exe --headless --path . --export-debug "Android" build/009-shooter.apk
 ```
@@ -119,14 +122,26 @@ ruled-out alternatives. Quick map:
   (fails=0, kills=10, wave advances, full touch chain). Documented harness
   assists: god-mode HP + point-blank teleport + pinned seed — it verifies
   mechanics, NOT player survival / navigation.
+  `tools/test_touch_events.tscn` → `TOUCH_EVENTS_PASS`: injects real
+  InputEventScreenTouch/Drag (wide-aspect window) through the full GUI ->
+  _unhandled_input -> stick -> TouchState -> PlayerInput pipeline; added
+  2026-11-16 after the ColorFlash STOP overlay was found eating all arena
+  touches (the API-level harness could not see that class of bug).
 - **Known issues / open items**:
   1. Green/white vertical stripes at screen bottom on A57 (mobile Vulkan)
      — UNCONFIRMED; suspect Background / FloorLayer TileMap or a tileset
      texture. Next: toggle those layers / compare desktop vs mobile.
-  2. Right-anchored touch layout: math + headless verified; in-game visual
-     confirm on a wide-aspect phone pending (aim knob expected ~89% width).
+  2. ~~Right-anchored touch layout visual confirm pending~~ — RESOLVED
+     2026-11-16 on A54: aim disc now at ~84-89% width. Two bugs fixed:
+     fullscreen `ScreenEffects/ColorFlash` had default `mouse_filter=STOP`
+     and ate ALL arena touches (sticks dead in-game); and the AimStick
+     `home_center` tscn override was dropped in compiled APK exports
+     (non-@export var) — homes are now assigned at runtime via
+     `Joystick.set_home()`. See docs/CHECKPOINT.md §2026-11-16.
   3. Not regression-covered: boss wave, bomb / sword / shotgun, pickups,
-     room transitions, game-over flow, real finger streams.
+     room transitions, game-over flow, human finger feel. Real
+     InputEventScreenTouch/Drag routing IS covered since 2026-11-16 by
+     `tools/test_touch_events.tscn` (TOUCH_EVENTS_PASS).
   4. ~250 harmless "invalid UID" warnings on fresh import (upstream UID
      refs vs regenerated .import UIDs; path fallback works).
   5. Debug-signed; no release keystore. WiFi adb install needs

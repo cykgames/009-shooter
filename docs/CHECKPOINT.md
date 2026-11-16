@@ -275,3 +275,85 @@ adb -s <DEVICE_WIFI_ADB> install -r --no-incremental build/009-shooter.apk
   `002-obby` was "same author, MIT" — wrong on both counts: 001/002 are
   by cykbot9 (per the cykgames catalog and owner), and 002 has no LICENSE
   file. Corrected to "(by cykbot9)"; 009 itself remains cykbot1.
+
+## Touch dead-stick bugfix (2026-11-16 ~08:00-08:50, cykbot9)
+
+User report from real play: left disc press dead (only presses outside the
+disc seemed to move), right disc completely dead. Root-caused, fixed,
+A/B-proven headless, and verified on A54 with real adb touch injection.
+
+### Bug 1 (the dead sticks): fullscreen STOP ColorRect ate every arena touch
+
+- `ScreenEffects/ColorFlash` (template damage-flash overlay, instanced in
+  every room via room_template.tscn) is a fullscreen ColorRect with the
+  DEFAULT `mouse_filter = STOP`. Godot's touch->mouse emulation delivers the
+  emulated button press to the topmost STOP control; ColorFlash accepted it,
+  which marks the original InputEventScreenTouch handled, so it NEVER reached
+  `TouchControls._unhandled_input`. Both sticks + DASH/WPN/pause were dead
+  in-game. Title/pause/game-over screens have no ScreenEffects, so menu taps
+  worked — the game looked playable but was uncontrollable in the arena.
+- Fix: `mouse_filter = 2` (IGNORE) on ColorFlash in screen_effects.tscn.
+  It is a pure visual overlay; it must never consume input.
+- A/B proof (tools/test_touch_events.tscn, real InputEventScreenTouch/Drag
+  via Input.parse_input_event at 1170x540 = 19.5:9, design 585x270):
+  STOP -> 15/15 probes fail, `gui_get_hovered_control() == ColorFlash`,
+  disc presses absent from _unhandled_input; IGNORE -> 0 fails (press on
+  disc, drag, press outside disc, auto-fire, two-finger move+aim).
+  Logs: build/touch_events_stop.log vs build/touch_events_fixed.log.
+- Why the old harness missed it: test_shooter.gd drives the stick API
+  (press_at/drag_to) directly, bypassing the event pipeline. The checkpoint
+  already listed "real finger streams not covered" — this was that gap.
+  New regression tools/test_touch_events.tscn closes it (TOUCH_EVENTS_PASS).
+
+### Bug 2 (right disc at 66% width): tscn override dropped in compiled export
+
+- On A54 the aim disc drew at ~66% width (design x≈411) instead of the
+  intended ~89% (519), while DASH/WPN/pause right-anchored correctly.
+- Cause: `Joystick.home_center` was a plain (non-@export) var. The per-node
+  tscn override `home_center = Vector2(174, 82)` on AimStick applies in
+  headless/source-script mode but is silently dropped in the compiled-script
+  APK export (script_export_mode=2), so the aim stick kept the MoveStick
+  default (66,82): zone position 345 + home 66 = disc 411.
+- Fix (belt and braces):
+  1. `@export var home_center` (editor/scene overrides now legitimate).
+  2. `Joystick.set_home(c)` + TouchControls._relayout assigns both homes at
+     RUNTIME (move 66,82 / aim 174,82) — script assignments are proven to
+     survive the compiled export (the button centers always worked).
+  3. AimStick zone also right-anchored in touch_controls.tscn
+     (anchor_left/right=1, offsets -240..0) so it tracks the right edge from
+     instantiation independent of the runtime assignment.
+- Verified on A54: disc moved 66% -> ~84% width (bottom-right under DASH);
+  left drag moves player + picks up weapon; right drag = blue knob + bullet
+  stream (auto-fire). Screenshots: agent-workspace artifacts/tmp/touch_audit/
+  009fix_2..8 (2=old layout, 3=left hold, 4=right hold+fire, 7=new layout,
+  8=final move+aim+fire).
+
+### Export-forensics lesson (do not repeat the spiral)
+
+- Four consecutive APK builds had IDENTICAL total byte sizes (37826222)
+  while script content changed — this is zip alignment coincidence, NOT a
+  stale export. Verify by hashing the APK and the inner
+  `assets/.../Joystick.gdc` entry (3319 -> 3392 bytes after the fix), not by
+  total size. `.godot/exported/<preset>/` caches converted .scn/.res only;
+  scripts compile straight into the APK. .gdc bodies are zstd-compressed
+  (magic at offset 12) and 4.7 identifier tables are not plain strings —
+  string-grepping a .gdc proves nothing.
+- Headless input gotcha: Input.parse_input_event positions are WINDOW coords;
+  the pipeline divides by the stretch scale before _unhandled_input (inject
+  via `get_viewport().get_screen_transform() * canvas_pos`). First repro
+  attempt injected design coords and landed off-disc — false negative.
+
+### Verification summary (ship build)
+
+- build/touch_events_ship.log = TOUCH_EVENTS_PASS (fails=0)
+- build/verify_ship.log = SHOOTER_TEST_PASS (fails=0, kills=10, wave advanced)
+- build/export_home4.log apksigner Signed; APK 37,826,222 bytes,
+  sha256 prefix 7fb3f9960db10bb9; installed on A54 (USB) and play-verified.
+- A57 still has the pre-fix install; update when next online
+  (`install -r --no-incremental`).
+- Reproduce:
+  ```bat
+  %GODOT% --headless --fixed-fps 60 --path . res://tools/test_touch_events.tscn
+  %GODOT% --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
+  %GODOT% --headless --path . --export-debug "Android" build/009-shooter.apk
+  ```
