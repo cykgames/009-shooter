@@ -86,7 +86,7 @@ Godot_v4.7.2-stable_win64_console.exe --headless --path . --export-debug "Androi
 
 Android notes:
 
-- Package `com.cykagent.shooter`, app name `CykShooter`, version 0.1.0.
+- Package `com.cykagent.shooter`, app name `CykShooter`, version 0.1.2.
 - arm64-v8a only, ETC2 texture compression, immersive mode, no internet
   permission.
 - `rendering/textures/vram_compression/import_etc2_astc=true` is required
