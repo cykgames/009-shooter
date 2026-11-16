@@ -3,9 +3,13 @@ extends Camera2D
 
 @export var follow:bool = true
 @export var lerp_speed:float = 5.0
+## World zoom applied at runtime (mobile readability: actors were ~5% of
+## screen height at zoom 1). Runtime assignment survives compiled export.
+@export var zoom_level:float = 2.0
 @export var target_position:Vector2Resource
 
 func _ready()->void:
+	zoom = Vector2(zoom_level, zoom_level)
 	set_target_position(target_position)
 	set_physics_process(follow && target_position != null)
 

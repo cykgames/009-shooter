@@ -357,3 +357,39 @@ A/B-proven headless, and verified on A54 with real adb touch injection.
   %GODOT% --headless --fixed-fps 60 --path . res://tools/test_shooter.tscn
   %GODOT% --headless --path . --export-debug "Android" build/009-shooter.apk
   ```
+
+## Camera zoom 2x — mobile readability (2026-11-16 ~09:30, cykbot9)
+
+User report from real play: player + weapons "as small as ants". Measured on
+A54 2340x1080: character ~60 px tall (~5% of screen height), pickups ~30 px,
+arena filled only ~half the screen with large black margins.
+
+- Cause: `MainCamera` (Camera2D) had NO zoom set (1x). Design viewport
+  480x270 stretched 4x on 1080p; actor sprites ~15 design px -> tiny.
+- Fix: `CameraFollow2D.gd` gains `@export var zoom_level:float = 2.0`,
+  applied in `_ready()` as `zoom = Vector2(zoom_level, zoom_level)`
+  (runtime assignment survives compiled-script export, per Bug-2 lesson).
+  `main_camera.tscn` also gets `zoom = Vector2(2, 2)` for editor parity
+  (built-in property override, export-safe).
+- Effect: character ~130 px (~12% of screen height); weapons, pickups,
+  enemies, bullets all 2x. HUD is a CanvasLayer -> sticks/buttons unchanged.
+  Pixel art stays crisp (nearest filter, integer 8x total scale).
+- Trade-off (accepted): visible world halved to ~292x135 design px; camera
+  follows player so arena edges can be off-screen — standard for the genre.
+  If playtest finds it too tight, lower `zoom_level` (e.g. 1.75), no other
+  change needed.
+- Verification:
+  - Headless at zoom 2: `build/verify_zoom_touch.log` = TOUCH_EVENTS_PASS,
+    `build/verify_zoom_shooter.log` = SHOOTER_TEST_PASS (kills=10, wave
+    advanced); `build/export_zoom.log` apksigner Signed.
+  - A54 (USB) install Success; on-device adb touch probe: left-stick move,
+    pistol pickup (inventory icon), right-stick auto-fire (bullet stream +
+    wall impact) all confirmed at zoom 2. Screenshots:
+    agent-workspace artifacts/tmp/touch_audit/zoom_1_title..zoom_6_fire2
+    (2=arena size, 4=move, 6=pickup+fire). Probe scripts:
+    agent-workspace artifacts/tmp/touch_009_zoom.py / touch_009_zoom2.py.
+  - Note: player starts UNARMED; right stick only fires after picking up a
+    weapon (probe 1's "no bullets" was this, not a regression).
+- A57 still has the pre-touch-fix AND pre-zoom install; update when next
+  online (`install -r --no-incremental`).
+- Commit: local (push pending owner consent).
