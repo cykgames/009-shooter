@@ -20,8 +20,11 @@ const SWITCH_RIGHT := 124.0
 const PAUSE_RIGHT := 28.0
 const BUTTON_Y := 122.0
 const PAUSE_Y := 18.0
-const BUTTON_RADIUS := 16.0
-const PAUSE_RADIUS := 12.0
+## Touch targets: the P1 pass measured DASH/WPN at 109 px on a 1080p phone
+## (radius 16 design units x ~3.2 scale). Radius 20 renders ~128 px and, with
+## HIT_SCALE, accepts touches up to ~193 px across.
+const BUTTON_RADIUS := 20.0
+const PAUSE_RADIUS := 16.0
 ## Same generous hit factor as the joystick grab radius.
 const HIT_SCALE := 1.5
 ## Aim stick zone width (matches touch_controls.tscn offset span 240..480).
