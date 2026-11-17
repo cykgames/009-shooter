@@ -64,3 +64,5 @@ func spawn()->void:
 			inst.global_position = initial_distance * direction * axis_multiplication_resource.value + projectile_position
 		
 		var _inst:Projectile2D = projectile_instance_resource.instance(_config_callback)
+		# W2 test-only bullet counter (no-op if no CykTest observer group).
+		get_tree().call_group("cyktest", "note_bullet", self)

@@ -49,6 +49,8 @@ var pause_bool_resource: BoolResource
 var _dash_touch := -1
 var _switch_touch := -1
 var _pause_touch := -1
+var _move_src := -1   # W2: last move route source arrival seq
+var _aim_src := -1    # W2: last aim route source arrival seq
 
 
 func _ready() -> void:
@@ -120,6 +122,11 @@ func _physics_process(_delta: float) -> void:
 	TouchState.move_axis = move_stick.output
 	TouchState.aim_axis = aim_stick.output
 	TouchState.shoot = aim_stick.output.length_squared() > 0.0001
+	# W2 test-only applied receipts (consumer copy point, edge-triggered).
+	CykTest.apply_push("move", _move_src, [move_stick.output.x, move_stick.output.y])
+	CykTest.apply_push("aim", _aim_src, [aim_stick.output.x, aim_stick.output.y])
+	CykTest.route_push("shoot", _aim_src, 1, true, TouchState.shoot)
+	CykTest.apply_push("shoot", _aim_src, TouchState.shoot)
 
 
 ## Local point for a window-space touch position (stretch-aware).
@@ -138,7 +145,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if touch != null:
 		var p := _local(touch.position)
 		if touch.pressed:
-			_press(p, touch.index)
+			_press(p, touch.index, event)
 		else:
 			_release(p, touch.index)
 		return
@@ -147,11 +154,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		var p := _local(drag.position)
 		if drag.index == move_stick.touch_index():
 			move_stick.drag_to(p - move_stick.position)
+			_move_src = CykTest.lookup_input_seq(drag.get_instance_id())
+			CykTest.route_push("move", _move_src, 0, true, [move_stick.output.x, move_stick.output.y])
 		elif drag.index == aim_stick.touch_index():
 			aim_stick.drag_to(p - aim_stick.position)
+			_aim_src = CykTest.lookup_input_seq(drag.get_instance_id())
+			CykTest.route_push("aim", _aim_src, 1, true, [aim_stick.output.x, aim_stick.output.y])
 
 
-func _press(p: Vector2, index: int) -> void:
+func _press(p: Vector2, index: int, event: InputEvent) -> void:
 	# Buttons win over stick zones (they sit above the aim zone).
 	if _hit(p, pause_center, PAUSE_RADIUS):
 		_pause_touch = index
@@ -171,10 +182,14 @@ func _press(p: Vector2, index: int) -> void:
 	var lp := p - move_stick.position
 	if move_stick.touch_index() == -1 and move_stick.can_activate(lp):
 		move_stick.press_at(lp, index)
+		_move_src = CykTest.lookup_input_seq(event.get_instance_id())
+		CykTest.route_push("move", _move_src, 0, true, [move_stick.output.x, move_stick.output.y])
 		return
 	var rp := p - aim_stick.position
 	if aim_stick.touch_index() == -1 and aim_stick.can_activate(rp):
 		aim_stick.press_at(rp, index)
+		_aim_src = CykTest.lookup_input_seq(event.get_instance_id())
+		CykTest.route_push("aim", _aim_src, 1, true, [aim_stick.output.x, aim_stick.output.y])
 
 
 func _release(_p: Vector2, index: int) -> void:
