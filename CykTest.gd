@@ -227,6 +227,14 @@ func _emit_sample() -> void:
 		d["scene"] = "menu"
 		d["pos"] = [0.0, 0.0, 0.0]
 	d["fps"] = snappedf(Performance.get_monitor(Performance.TIME_FPS), 0.1)
+	# W2e test-only forward display transform evidence (viewport->screen):
+	# origin + basis columns. The host applies this to injector display px so
+	# atom coords land in the same domain as the input_log receipts (which are
+	# get_screen_transform() * event.position). Generic; no device facts.
+	var xf := get_viewport().get_screen_transform()
+	d["xform"] = [snappedf(xf.origin.x, 0.01), snappedf(xf.origin.y, 0.01),
+		snappedf(xf.x.x, 0.0001), snappedf(xf.x.y, 0.0001),
+		snappedf(xf.y.x, 0.0001), snappedf(xf.y.y, 0.0001)]
 	d["wm"] = {"input": input_ring.watermark(), "route": route_ring.watermark(),
 		"apply": apply_ring.watermark()}
 	print("[CYKTEST] " + JSON.stringify(d))

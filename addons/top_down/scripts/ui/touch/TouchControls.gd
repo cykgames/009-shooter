@@ -147,7 +147,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if touch.pressed:
 			_press(p, touch.index, event)
 		else:
-			_release(p, touch.index)
+			_release(p, touch.index, event)
 		return
 	var drag := event as InputEventScreenDrag
 	if drag != null:
@@ -192,11 +192,18 @@ func _press(p: Vector2, index: int, event: InputEvent) -> void:
 		CykTest.route_push("aim", _aim_src, 1, true, [aim_stick.output.x, aim_stick.output.y])
 
 
-func _release(_p: Vector2, index: int) -> void:
+func _release(_p: Vector2, index: int, event: InputEvent) -> void:
+	# W2 test-only release route receipts: releasing a stick writes output->0,
+	# a real routed write that must carry a route token (src == the touch_up
+	# arrival seq) so the host chain can link the UP atom (per-role namespace).
 	if index == move_stick.touch_index():
 		move_stick.release_touch()
+		var src := CykTest.lookup_input_seq(event.get_instance_id())
+		CykTest.route_push("move", src, 0, true, [move_stick.output.x, move_stick.output.y])
 	elif index == aim_stick.touch_index():
 		aim_stick.release_touch()
+		var src := CykTest.lookup_input_seq(event.get_instance_id())
+		CykTest.route_push("aim", src, 1, true, [aim_stick.output.x, aim_stick.output.y])
 	if index == _dash_touch:
 		_dash_touch = -1
 		TouchState.dash = false
